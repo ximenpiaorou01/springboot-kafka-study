@@ -1,0 +1,42 @@
+server:
+  port: 8080
+spring:
+  kafka:
+    bootstrap-servers: 192.168.57.130:9092,192.168.57.130:9093,192.168.57.130:9094
+    producer:
+      #ack=0,表示发送消息不需要broker中的leader把数据写到本地log就返回，生产端就可以继续发消息，这种方式容易丢失消息。
+      #ack=1,表示消息至少需要leader写到本地log，但不需要等待所有follower是否写入到本地log,就可以继续发送下一条消息。
+      #ack=-1或者all，需要等待min_insync_replicas(默认为1，推荐大于大于2)这个参数配置的副本个数都成功写入log，这种策略保证只要有
+      #一个备份存活就不会丢失数据，这是最强的数据保证，一般除非是金融级别，或者跟钱打交道的才用这种配置
+      acks: 1
+      retries: 3 #设置大于0的值，则客户端会将发送失败的记录重新发送
+      batch-size: 16384 #默认16k，kafka会在batch满时将数据发送到broker，提升性能
+      buffer-memory: 33554423 #缓存池，默认32M
+      #指定消息key和消息体的编码方式
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: default-group
+      enable-auto-commit: false #不自动提交offset
+      auto-offset-reset: earliest #消费端第一次启动从最开始位置消费，后面即使重启也从offset位置开始消费
+      #消息反序列化
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      max-poll-records: 500 #一次最大拉取500条数据
+    listener:
+      #当一条记录被消费者监听器(ListenerConsumer)处理之后提交
+      #RECORD
+      #当每一批poll()的数据被消费者监听器(ListenerConsumer)处理之后提交
+      #BATCH
+      #当每一批poll()的数据被消费者监听器(ListenerConsumer)处理之后，距离上次提交时间大于TIME时提交
+      #TIME
+      #当每一批poll()的数据被消费者监听器(ListennrConsumer)处理之后，被处理record数量大于等于count是提交
+      #COUNT
+      #TIME|COUNT有一个满足时提交
+      #COUNT_TIME
+      #当每一批poll()的数据被消费者监听器(ListenerConsumer)处理之后,手动调用Acknowledgment.acknowledge()后提交
+      #MANUAL
+      #手动调用Acknowledgment.acknowledge()后立即提交，一般使用这种
+      ack-mode: manual_immediate
+  redis:
+    host: 192.168.57.130
